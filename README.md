@@ -14,6 +14,14 @@
 ### Problems so far
 - Bro I am not a coding genius this is a big algo
 ## Progress
+- Added fetchAllSkills fetch for skills
+- Added Dropdown and used the fetchAllSkills function to show as options
+- Added Clone button for the Dropdown
+- Added gatherData, buildingUrl and fetchArmor to fetch list of armor base on Skill and its level (Need to tune)
+- Added button to trigger gatherData
+- Added Choice.js for search function within dropdown
+- Added Display for all the armors result
+## Diary
 ### Day 1
 - Brainstorm how to approach it
 - Option 1 (What I am trying to do right now 11/08/2021)
@@ -34,3 +42,6 @@
 - Added a centralize function to display in console each skills and what armors that have that skills
 - Added choice.js for search function within dropdown
 - Try to deploy this just in case.
+- Oh my god JS has asynchronous syntanx. Unlike rails which stop the threads or the block of code as long as its not finished JS async acuatlly just go and go then you need to do a Promise.all then pass the promise then once its done I can do the next step. Very informative and I realize its very different from rails
+- I can show now all armors that has skills selected.
+- Good stopping point for tommorows attempt to create an algorithm.

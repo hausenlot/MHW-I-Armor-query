@@ -38,7 +38,7 @@ function populateSkillDropdown(dropdown, skillsData) {
                   id: rank.id,
                   skillName: skill.name
               }),
-              label: `Level ${rank.level} - ${rank.description.substring(0, 50)}...`,
+              label: `${skill.name} - ${rank.level}`,
               customProperties: {
                   description: rank.description
               }
@@ -73,7 +73,7 @@ function populateSkillDropdown(dropdown, skillsData) {
 
 // Function to add a new dropdown
 function addNewDropdown() {
-  // Create wrapper div with Tailwind classes
+  // Create wrapper div
   const wrapper = document.createElement('div');
   wrapper.className = 'flex items-center gap-2';
   
@@ -87,7 +87,7 @@ function addNewDropdown() {
   newDropdown.id = dropdownId;
   newDropdown.className = 'w-full';
   
-  // Add remove button with Tailwind classes
+  // Add remove button
   const removeButton = document.createElement('button');
   removeButton.textContent = '×';
   removeButton.className = 'px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600';
@@ -110,29 +110,31 @@ function addNewDropdown() {
 //Central function
 function gatherData() {
   const dropdowns = document.querySelectorAll('select');
+  const fetchDatas = []; // Array to collect promises
 
-  // Loop through each dropdown and get the selected value
   dropdowns.forEach(dropdown => {
-    // Get the selected option's value
     const selectedValue = dropdown.value;
 
-    // Parse the JSON string into an object
     if (selectedValue) {
-        try {
-            const parsedValue = JSON.parse(selectedValue);
-            buildingUrl(parsedValue)
-              .then(response => {
-                console.log('Response from fetch:', response);
-              });
-        } catch (error) {
-            console.error('Failed to parse selected value:', error);
-        }
+      try {
+        const parsedValue = JSON.parse(selectedValue);
+        const fetchData = formatedParams(parsedValue) // Fetch data for each dropdown value
+          .then(response => {
+            console.log('Response from fetch:', response);
+            return response; // Return response to be collected in storedData
+          });
+          fetchDatas.push(fetchData); // Store promise
+      } catch (error) {
+        console.error('Failed to parse selected value:', error);
+      }
     }
   });
+  displayArmor(fetchDatas);
 }
 
-function buildingUrl(selectedSkills) {
-  const query = `{"skills.skillName":"${selectedSkills.skillName}","skills.id":"${selectedSkills.id}"}`;
+// Build parameter with MongoDB Style as per MHWDB documentation
+function formatedParams(selectedSkills) {
+  const query = `{"skills.skillName":"${selectedSkills.skillName}"}`; // ,"skills.id":"${selectedSkills.id}"
   console.log(query);
   const encodedQueryString = encodeURIComponent(query);
   console.log(encodedQueryString);
@@ -142,6 +144,7 @@ function buildingUrl(selectedSkills) {
   return fetchArmor(encodedQueryString);
 }
 
+// API Request
 function fetchArmor(encodedQueryString) {
   return fetch(`https://mhw-db.com/armor?q=${encodedQueryString}`)
     .then(response => {
@@ -151,4 +154,27 @@ function fetchArmor(encodedQueryString) {
         return response.json(); // Returning the promise of JSON data
     })
     .catch(error => console.error('Error fetching data:', error));
+}
+
+// Display store data.
+function displayArmor(fetchPromises) {
+  const resultsDiv = document.getElementById('armor-results');
+  resultsDiv.innerHTML = ''; // Clear previous results
+  
+  Promise.all(fetchPromises)
+    .then(responses => {
+      if (responses && responses.length > 0) {
+        responses.forEach(dataArray => {
+          // Ensure dataArray is iterable if API response returns an array
+          dataArray.forEach(armor => {
+            const armorDiv = document.createElement('div');
+            armorDiv.textContent = `${armor.name} - Defense: ${armor.defense}`;
+            resultsDiv.appendChild(armorDiv);
+          });
+        });
+      } else {
+        resultsDiv.textContent = 'No armor found for the selected parameters.';
+      }
+    })
+    .catch(error => console.error('Error in fetching armor data:', error));
 }
