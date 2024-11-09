@@ -1,0 +1,15 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "chrome",
+      "request": "launch",
+      "name": "Launch Chrome against localhost",
+      "url": "file:///C:/Users/Hausen/Desktop/HTML,%20CSS,%20JS%20PRACTICE%20REPO/MHW-I-Armor-query/index.html",
+      "webRoot": "${workspaceFolder}"
+    }
+  ]
+}
