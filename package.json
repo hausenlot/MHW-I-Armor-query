@@ -1,0 +1,11 @@
+{
+  "name": "mhw-i-armor-query",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "tailwindcss -i ./styles.css -o ./dist/styles.css",
+    "watch": "tailwindcss -i ./styles.css -o ./dist/styles.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.14"
+  }
+}

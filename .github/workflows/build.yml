@@ -1,0 +1,42 @@
+  name: Build and Deploy
+  on:
+    push:
+      branches: [ main ]
+    pull_request:
+      branches: [ main ]
+  
+  permissions:
+    contents: write
+  
+  jobs:
+    build:
+      runs-on: ubuntu-latest
+      
+      steps:
+      - uses: actions/checkout@v4
+  
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+  
+      - name: Install dependencies
+        run: |
+          npm ci || npm install
+          npm install -g tailwindcss
+  
+      - name: Create dist directory
+        run: mkdir -p dist
+  
+      - name: Build CSS
+        run: |
+          chmod +x ./node_modules/.bin/tailwindcss
+          npx tailwindcss -i ./styles.css -o ./dist/styles.css
+  
+      - name: Deploy to GitHub Pages
+        if: success() && github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
