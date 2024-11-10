@@ -21,6 +21,7 @@
 - Added button to trigger gatherData
 - Added Choice.js for search function within dropdown
 - Added Display for all the armors result
+- Ehhh
 ## Diary
 ### Day 1
 - Brainstorm how to approach it
@@ -45,3 +46,8 @@
 - Oh my god JS has asynchronous syntanx. Unlike rails which stop the threads or the block of code as long as its not finished JS async acuatlly just go and go then you need to do a Promise.all then pass the promise then once its done I can do the next step. Very informative and I realize its very different from rails
 - I can show now all armors that has skills selected.
 - Good stopping point for tommorows attempt to create an algorithm.
+### Day 4
+- I'll stop for now I realize this is too heavy for me but right now its working it just too long to load
+- Adding "rank":"low/high/master" will make it faster const query = `{"skills.skillName":"${selectedSkills.skillName}"}`;
+- It only search for 5 piece not including the charm and slots/decorations
+- I shall return
