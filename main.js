@@ -18,12 +18,10 @@ function fetchAllSkills() {
       .catch(error => console.error('Error fetching skills data:', error));
 }
 
-// Function to create a unique ID for each dropdown
 function createUniqueId() {
   return 'dropdown-' + Math.random().toString(36).substr(2, 9);
 }
 
-// Function to populate a given dropdown element with skill ranks
 function populateSkillDropdown(dropdown, skillsData) {
   const choices = [];
   
@@ -36,7 +34,8 @@ function populateSkillDropdown(dropdown, skillsData) {
           choices: skill.ranks.map(rank => ({
               value: JSON.stringify({
                   id: rank.id,
-                  skillName: skill.name
+                  skillName: skill.name,
+                  skillLevel: rank.level
               }),
               label: `${skill.name} - ${rank.level}`,
               customProperties: {
@@ -71,7 +70,6 @@ function populateSkillDropdown(dropdown, skillsData) {
   return choicesInstance;
 }
 
-// Function to add a new dropdown
 function addNewDropdown() {
   // Create wrapper div
   const wrapper = document.createElement('div');
@@ -110,7 +108,8 @@ function addNewDropdown() {
 //Central function
 function gatherData() {
   const dropdowns = document.querySelectorAll('select');
-  const fetchDatas = []; // Array to collect promises
+  const fetchDatas = [];
+  const skillLists= [];
 
   dropdowns.forEach(dropdown => {
     const selectedValue = dropdown.value;
@@ -118,18 +117,31 @@ function gatherData() {
     if (selectedValue) {
       try {
         const parsedValue = JSON.parse(selectedValue);
+        skillLists.push({skillName:parsedValue.skillName, skillLevel:parsedValue.skillLevel});
         const fetchData = formatedParams(parsedValue) // Fetch data for each dropdown value
           .then(response => {
             console.log('Response from fetch:', response);
             return response; // Return response to be collected in storedData
           });
-          fetchDatas.push(fetchData); // Store promise
+          fetchDatas.push({ skillName: parsedValue.skillName, promise: fetchData }); // Store promise
       } catch (error) {
         console.error('Failed to parse selected value:', error);
       }
     }
   });
-  displayArmor(fetchDatas);
+
+  //Wait for all pending jobs then create a new array(responses) but only the promise (item.promise) [promise1, promise2]
+  Promise.all(fetchDatas.map(item => item.promise)).then(responses => {
+    // At this point we have 2 things fetchDatas with the skill name and its promise and responses which is the array of response of promise
+    const armorData = {};
+    // Map the armorData object with for each with index since we have a response array we can use the index of this loop to look for the equivalent promise to the item.skilName
+    fetchDatas.forEach((item, index) => {
+      armorData[item.skillName] = responses[index];
+    });
+
+    const combinations = findArmorCombinations(skillLists, armorData); // Now passes structured data to displayArmor
+    displayCombinations(combinations);
+  });
 }
 
 // Build parameter with MongoDB Style as per MHWDB documentation
@@ -138,7 +150,6 @@ function formatedParams(selectedSkills) {
   console.log(query);
   const encodedQueryString = encodeURIComponent(query);
   console.log(encodedQueryString);
-  console.log('API URL:', `https://mhw-db.com/armor?q={${query}}`);
 
   // Call fetchArmor and return the promise
   return fetchArmor(encodedQueryString);
@@ -156,25 +167,124 @@ function fetchArmor(encodedQueryString) {
     .catch(error => console.error('Error fetching data:', error));
 }
 
-// Display store data.
-function displayArmor(fetchPromises) {
-  const resultsDiv = document.getElementById('armor-results');
-  resultsDiv.innerHTML = ''; // Clear previous results
-  
-  Promise.all(fetchPromises)
-    .then(responses => {
-      if (responses && responses.length > 0) {
-        responses.forEach(dataArray => {
-          // Ensure dataArray is iterable if API response returns an array
-          dataArray.forEach(armor => {
-            const armorDiv = document.createElement('div');
-            armorDiv.textContent = `${armor.name} - Defense: ${armor.defense}`;
-            resultsDiv.appendChild(armorDiv);
-          });
-        });
-      } else {
-        resultsDiv.textContent = 'No armor found for the selected parameters.';
+function findArmorCombinations(skillLists, armorData) {
+  // Convert skillLists to a map for easier lookup
+  const requiredSkills = new Map(
+      skillLists.map(skill => [skill.skillName, skill.skillLevel])
+  );
+
+  // Helper function to create a unique key for armor piece
+  function createArmorKey(armor) {
+      return `${armor.name}_${armor.type}`;
+  }
+
+  // Helper function to create a unique key for combination
+  function createCombinationKey(combination) {
+      return combination
+          .map(armor => createArmorKey(armor))
+          .sort()
+          .join('|');
+  }
+
+  // Separate armor by type and remove duplicates
+  const armorByType = {
+      head: [],
+      chest: [],
+      gloves: [],
+      waist: [],
+      legs: []
+  };
+
+  // Set to keep track of seen armor pieces
+  const seenArmor = new Set();
+
+  // Populate armor pieces by type, avoiding duplicates
+  for (const skillName in armorData) {
+      armorData[skillName].forEach(armor => {
+          if (armor.skills && armor.skills.length > 0) {
+              const armorKey = createArmorKey(armor);
+              if (!seenArmor.has(armorKey)) {
+                  seenArmor.add(armorKey);
+                  armorByType[armor.type].push(armor);
+              }
+          }
+      });
+  }
+
+  const validCombinations = new Set();
+  const COMBINATION_LIMIT = 20;
+
+  // Helper function to check if a combination meets skill requirements
+  function checkSkillRequirements(combination) {
+      const skillTotals = new Map();
+
+      // Sum up all skills from the combination
+      combination.forEach(armor => {
+          if (armor.skills) {
+              armor.skills.forEach(skill => {
+                  const current = skillTotals.get(skill.skillName) || 0;
+                  skillTotals.set(skill.skillName, current + skill.level);
+              });
+          }
+      });
+
+      // Check if all required skills are met
+      for (const [skillName, requiredLevel] of requiredSkills) {
+          const actualLevel = skillTotals.get(skillName) || 0;
+          if (actualLevel < requiredLevel) {
+              return false;
+          }
       }
-    })
-    .catch(error => console.error('Error in fetching armor data:', error));
+
+      return true;
+  }
+
+  // Recursive function to build combinations
+  function buildCombination(current, types) {
+      // Stop if we've reached the combination limit
+      if (validCombinations.size >= COMBINATION_LIMIT) {
+          return;
+      }
+
+      if (types.length === 0) {
+          if (checkSkillRequirements(current)) {
+              const combinationKey = createCombinationKey(current);
+              validCombinations.add(combinationKey);
+          }
+          return;
+      }
+
+      const currentType = types[0];
+      const remainingTypes = types.slice(1);
+
+      for (const armor of armorByType[currentType]) {
+          buildCombination([...current, armor], remainingTypes);
+      }
+  }
+
+  // Start building combinations
+  buildCombination([], ['head', 'chest', 'gloves', 'waist', 'legs']);
+
+  // Convert combination keys back to armor combinations
+  const results = Array.from(validCombinations).slice(0, COMBINATION_LIMIT).map(combinationKey => {
+      return combinationKey.split('|').map(armorKey => {
+          const [name, type] = armorKey.split('_');
+          return Object.values(armorByType[type]).find(armor => armor.name === name);
+      });
+  });
+
+  return results;
+}
+
+function displayCombinations(combinations) {
+  console.log(`Found ${combinations.length} valid combinations`);
+  combinations.forEach((combination, index) => {
+      console.log(`\nCombination ${index + 1}:`);
+      combination.forEach(armor => {
+          console.log(`${armor.type}: ${armor.name}`);
+          armor.skills.forEach(skill => {
+              console.log(`  - ${skill.skillName} Level ${skill.level}`);
+          });
+      });
+  });
 }
