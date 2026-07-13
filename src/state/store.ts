@@ -110,7 +110,7 @@ interface AppState {
 
 export const useStore = create<AppState>((set) => ({
   theme: 'dark',
-  weaponSlots: [],
+  weaponSlots: [0, 0, 0],
   targetSkills: [],
   selectedSetBonuses: [],
   selectedGroupSkills: [],
