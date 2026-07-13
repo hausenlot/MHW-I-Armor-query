@@ -33,11 +33,16 @@ export function solveArmorSets() {
     weaponSlots,
     selectedSetBonuses,
     selectedGroupSkills,
+    selectedWeaponSkills,
     dataIndex,
-    isLoading
+    isLoading,
+    maxResults
   } = store;
 
   if (isLoading || !dataIndex || !searchWorker) return;
+
+  const activeSkillsCount = targetSkills.filter((s) => s.level > 0).length;
+  if (activeSkillsCount === 0) return;
 
   store.setIsLoading(true);
 
@@ -81,6 +86,17 @@ export function solveArmorSets() {
     }
   }
 
+  // Pass selected regular weapon skills
+  if (selectedWeaponSkills && selectedWeaponSkills.length > 0) {
+    for (const wSkill of selectedWeaponSkills) {
+      if (wSkill.level <= 0) continue;
+      const match = dataIndex.skillByName.get(wSkill.name.toLowerCase());
+      if (match) {
+        weaponSkills.push({ skillId: match.id, level: wSkill.level });
+      }
+    }
+  }
+
   const weapon = {
     id: 9999,
     name: 'Custom Weapon',
@@ -94,7 +110,7 @@ export function solveArmorSets() {
     weapon,
     charm: 'search', // default to search charm mode
     rankFilter: 'high',
-    maxResults: 10,
+    maxResults: maxResults || 10,
   };
 
   // Local accumulator to collect results from the worker

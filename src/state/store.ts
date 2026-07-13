@@ -79,6 +79,7 @@ interface AppState {
   theme: 'dark' | 'light';
   weaponSlots: number[];
   targetSkills: SkillFilter[];
+  selectedWeaponSkills: SkillFilter[];
   selectedSetBonuses: string[];
   selectedGroupSkills: string[];
   results: RealSolverResult[];
@@ -90,11 +91,13 @@ interface AppState {
   dataIndex: any;
   skillsList: any[];
   armorSets: any[];
+  maxResults: number;
 
   // Actions
   setTheme: (theme: 'dark' | 'light') => void;
   setWeaponSlots: (slots: number[]) => void;
   setTargetSkills: (skills: SkillFilter[]) => void;
+  setSelectedWeaponSkills: (skills: SkillFilter[]) => void;
   setSelectedSetBonuses: (setBonuses: string[]) => void;
   setSelectedGroupSkills: (groupSkills: string[]) => void;
   setResults: (results: RealSolverResult[]) => void;
@@ -106,6 +109,7 @@ interface AppState {
   setDataIndex: (dataIndex: any) => void;
   setSkillsList: (skillsList: any[]) => void;
   setArmorSets: (armorSets: any[]) => void;
+  setMaxResults: (maxResults: number) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -224,10 +228,13 @@ export const useStore = create<AppState>((set) => ({
   dataIndex: null,
   skillsList: [],
   armorSets: [],
+  maxResults: 10,
+  selectedWeaponSkills: [],
 
   setTheme: (theme) => set({ theme }),
   setWeaponSlots: (weaponSlots) => set({ weaponSlots }),
   setTargetSkills: (targetSkills) => set({ targetSkills }),
+  setSelectedWeaponSkills: (selectedWeaponSkills) => set({ selectedWeaponSkills }),
   setSelectedSetBonuses: (selectedSetBonuses) => set({ selectedSetBonuses }),
   setSelectedGroupSkills: (selectedGroupSkills) => set({ selectedGroupSkills }),
   setResults: (results) => set({ results }),
@@ -239,4 +246,5 @@ export const useStore = create<AppState>((set) => ({
   setDataIndex: (dataIndex) => set({ dataIndex }),
   setSkillsList: (skillsList) => set({ skillsList }),
   setArmorSets: (armorSets) => set({ armorSets }),
+  setMaxResults: (maxResults) => set({ maxResults }),
 }));

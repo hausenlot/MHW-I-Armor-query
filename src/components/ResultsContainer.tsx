@@ -19,6 +19,9 @@ export const ResultsContainer: React.FC<ResultsContainerProps> = ({
   const searchSummary = useStore((state) => state.searchSummary);
   const sortBy = useStore((state) => state.sortBy);
   const setSortBy = useStore((state) => state.setSortBy);
+  const targetSkills = useStore((state) => state.targetSkills);
+
+  const hasActiveSkills = targetSkills.some((s) => s.level > 0);
 
   const getSortedResults = () => {
     return [...results].sort((a, b) => {
@@ -83,6 +86,13 @@ export const ResultsContainer: React.FC<ResultsContainerProps> = ({
             sortedResults.map((result) => (
               <ResultCard key={result.id} result={result} />
             ))
+          ) : !hasActiveSkills ? (
+            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '80px 40px', color: 'var(--color-text-muted)' }}>
+              <div style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--color-text)', marginBottom: '8px' }}>
+                No Target Skills Selected
+              </div>
+              Search and add target skills in the sidebar, then solve to find matching armor combinations.
+            </div>
           ) : (
             <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px', color: 'var(--color-text-muted)' }}>
               No configurations match your current target parameters.
