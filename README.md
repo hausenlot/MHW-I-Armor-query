@@ -26,8 +26,8 @@ flowchart TD
 
 ### Where the data comes from
 - **API**: `https://wilds.mhdb.io/en` (endpoints: `/armor`, `/armor/sets`, `/skills`, `/decorations`, `/charms`, `/weapons`)
-- **Fetch script**: [fetch_data.ps1](file:///d:/CLIENT FOR ASP/mhwildsbuilder/fetch_data.ps1) — a one-time PowerShell script (`npm run fetch-data`) that pulls all data and saves it to `data/` as local JSON files
-- **Served at runtime from**: [public/data/](file:///d:/CLIENT FOR ASP/mhwildsbuilder/public/data) (6 JSON files used by the solver)
+- **Fetch script**: `fetch_data.ps1` — a one-time PowerShell script (`npm run fetch-data`) that pulls all data and saves it to `data/` as local JSON files
+- **Served at runtime from**: `public/data/` (6 JSON files used by the solver)
 
 ### The 6 Game Data Files
 
@@ -44,7 +44,7 @@ flowchart TD
 
 ## 2. query.json — The Input
 
-[query.json](file:///d:/CLIENT FOR ASP/mhwildsbuilder/query.json) is where you define **what build you want**.
+`query.json` is where you define **what build you want**.
 
 ```json
 {
@@ -78,7 +78,7 @@ flowchart TD
 
 ## 3. cli.js — The Entry Point
 
-[cli.js](file:///d:/CLIENT FOR ASP/mhwildsbuilder/cli.js) orchestrates the full pipeline:
+`cli.js` orchestrates the full pipeline:
 
 ### Step-by-step:
 
@@ -95,7 +95,7 @@ flowchart TD
 
 ## 4. buildIndex() — The Data Index
 
-[dataIndex.js](file:///d:/CLIENT FOR ASP/mhwildsbuilder/src/data/dataIndex.js) transforms flat JSON arrays into fast-lookup data structures.
+`dataIndex.js` transforms flat JSON arrays into fast-lookup data structures.
 
 ### Indices Created
 
@@ -125,7 +125,7 @@ Each armor piece gets a `contributesToSetSkills` array — the set of `skillId`s
 
 ## 5. solve() — The Solver Engine
 
-[solver.js](file:///d:/CLIENT FOR ASP/mhwildsbuilder/src/search/solver.js) is the brain. It uses **constraint propagation + branch-and-bound search**.
+`solver.js` is the brain. It uses **constraint propagation + branch-and-bound search**.
 
 ### High-Level Flow
 
@@ -216,7 +216,7 @@ When all 5 pieces are chosen, before decoration filling:
 
 ## 6. tryFillWithDecos() — The Decoration Filler
 
-[decoFiller.js](file:///d:/CLIENT FOR ASP/mhwildsbuilder/src/search/decoFiller.js) takes a chosen armor+weapon combination and tries to fill the remaining skill gaps with decorations.
+`decoFiller.js` takes a chosen armor+weapon combination and tries to fill the remaining skill gaps with decorations.
 
 ### Key Constraint
 Decorations have a `kind`:
@@ -280,7 +280,7 @@ Each result contains:
 
 ## 10. Piece Pruning (Dominance Check)
 
-[comparePieces()](file:///d:/CLIENT FOR ASP/mhwildsbuilder/src/search/solver.js#L695-L769) determines if piece A **strictly dominates** piece B:
+`comparePieces()` determines if piece A **strictly dominates** piece B:
 
 Piece A dominates B if it is **≥** in all three dimensions:
 1. **Skills**: For every desired skill, A provides ≥ levels
@@ -318,4 +318,4 @@ mhwildsbuilder/
 ```
 
 > [!NOTE]
-> [dataLoader.js](file:///d:/CLIENT FOR ASP/mhwildsbuilder/src/data/dataLoader.js) and [searchWorker.js](file:///d:/CLIENT FOR ASP/mhwildsbuilder/src/search/searchWorker.js) are for the **browser frontend** (Vite-based). The CLI path uses `fs.readFileSync` directly and runs the solver synchronously on the main thread.
+> `dataLoader.js` and `searchWorker.js` are for the **browser frontend** (Vite-based). The CLI path uses `fs.readFileSync` directly and runs the solver synchronously on the main thread.
