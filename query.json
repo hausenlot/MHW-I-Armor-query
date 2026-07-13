@@ -1,0 +1,85 @@
+{
+  "skills": [
+    {
+      "name": "Critical Boost",
+      "level": 3
+    },
+    {
+      "name": "Tetrad Shot",
+      "level": 3
+    },
+    {
+      "name": "Water Attack",
+      "level": 1
+    },
+    {
+      "name": "Spread/Power Shots",
+      "level": 1
+    },
+    {
+      "name": "Adrenaline Rush",
+      "level": 5
+    },
+    {
+      "name": "Weakness Exploit",
+      "level": 5
+    },
+    {
+      "name": "Constitution",
+      "level": 5
+    },
+    {
+      "name": "Peak Performance",
+      "level": 4
+    },
+    {
+      "name": "Burst",
+      "level": 4
+    },
+    {
+      "name": "Stamina Surge",
+      "level": 3
+    },
+    {
+      "name": "Speed Eating",
+      "level": 2
+    },
+    {
+      "name": "Agitator",
+      "level": 1
+    },
+    {
+      "name": "Aquatic/Oilsilt Mobility",
+      "level": 1
+    },
+    {
+      "name": "Gogmapocalypse",
+      "level": 2
+    },
+    {
+      "name": "Ebony Odogaron's Power",
+      "level": 1
+    },
+    {
+      "name": "Rathalos's Flare",
+      "level": 1
+    }
+  ],
+  "weapon": {
+    "slots": [
+      3,
+      3,
+      3
+    ],
+    "skills": [
+      {
+        "name": "Lord's Soul",
+        "level": 1
+      }
+    ],
+    "setName": "Gogmazios α"
+  },
+  "charm": null,
+  "rank": "high",
+  "maxResults": 10
+}
