@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Minus, Search, Trash2 } from 'lucide-react';
+import { Plus, Minus, Search, Trash2, Settings } from 'lucide-react';
 import { useStore } from '../state/store';
+import { DecoInventoryModal } from './DecoInventoryModal';
 
 interface SidebarProps {
   onSearch: () => void;
@@ -23,6 +24,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ onSearch, isSearching }) => {
   const setMaxResults = useStore((state) => state.setMaxResults);
   const setResults = useStore((state) => state.setResults);
   const setSearchSummary = useStore((state) => state.setSearchSummary);
+  const includeTranscend = useStore((state) => state.includeTranscend);
+  const setIncludeTranscend = useStore((state) => state.setIncludeTranscend);
+  const rankFilter = useStore((state) => state.rankFilter);
+  const setRankFilter = useStore((state) => state.setRankFilter);
+  const searchAllDecos = useStore((state) => state.searchAllDecos);
+  const setSearchAllDecos = useStore((state) => state.setSearchAllDecos);
 
   const hasActiveSkills = targetSkills.some((s) => s.level > 0);
 
@@ -39,6 +46,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onSearch, isSearching }) => {
   const [weaponSkillSearch, setWeaponSkillSearch] = useState('');
   const [setBonusSearch, setSetBonusSearch] = useState('');
   const [groupSkillSearch, setGroupSkillSearch] = useState('');
+  const [isDecoModalOpen, setIsDecoModalOpen] = useState(false);
 
   // Autocomplete suggestions state
   const [focusedInput, setFocusedInput] = useState<'setBonus' | 'groupSkill' | 'targetSkill' | 'weaponSkill' | null>(null);
@@ -219,27 +227,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ onSearch, isSearching }) => {
 
       <div className="sidebar-content" ref={sidebarContentRef}>
         {/* Weapon Configuration Group */}
-        <div className="glass-panel" style={{
-          padding: '16px',
-          borderRadius: 'var(--border-radius-lg)',
+        <div style={{
           display: 'flex',
           flexDirection: 'column',
           gap: '20px',
-          background: 'rgba(255, 255, 255, 0.015)'
         }}>
-          <div style={{
-            fontWeight: 600,
-            fontSize: '0.8rem',
-            color: 'var(--color-primary)',
-            letterSpacing: '0.05em',
-            textTransform: 'uppercase',
-            borderBottom: '1px solid var(--color-border)',
-            paddingBottom: '8px',
-            marginBottom: '-4px'
-          }}>
-            Weapon Configuration
-          </div>
-
           {/* 3 Weapon Slots Section */}
           <div>
             <div className="sidebar-section-title">
@@ -535,6 +527,113 @@ export const Sidebar: React.FC<SidebarProps> = ({ onSearch, isSearching }) => {
           </div>
         </div>
 
+        {/* Armor Filtering Options Section */}
+        <div>
+          <div className="sidebar-section-title">
+            <span>Armor Filtering</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {/* Transcend Toggle Switch */}
+            <label style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer',
+              userSelect: 'none',
+            }}>
+              <span style={{ fontSize: '0.85rem', color: 'var(--color-text)' }}>Armor Transcendence</span>
+              <div className="toggle-switch">
+                <input
+                  id="include-transcend-toggle"
+                  type="checkbox"
+                  checked={includeTranscend}
+                  onChange={(e) => setIncludeTranscend(e.target.checked)}
+                />
+                <span className="slider"></span>
+              </div>
+            </label>
+
+            {/* Rank Segmented Control */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Armor & Charm Rank</span>
+              <div className="rank-filter-segmented">
+                <button
+                  type="button"
+                  className={`segmented-button ${rankFilter === 'all' ? 'active' : ''}`}
+                  onClick={() => setRankFilter('all')}
+                >
+                  All
+                </button>
+                <button
+                  type="button"
+                  className={`segmented-button ${rankFilter === 'low' ? 'active' : ''}`}
+                  onClick={() => setRankFilter('low')}
+                >
+                  Low
+                </button>
+                <button
+                  type="button"
+                  className={`segmented-button ${rankFilter === 'high' ? 'active' : ''}`}
+                  onClick={() => setRankFilter('high')}
+                >
+                  High
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Decoration Filtering Options Section */}
+        <div>
+          <div className="sidebar-section-title">
+            <span>Decoration Filtering</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {/* Search All / Owned Segmented Control */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Decoration Mode</span>
+              <div className="rank-filter-segmented">
+                <button
+                  type="button"
+                  className={`segmented-button ${searchAllDecos ? 'active' : ''}`}
+                  onClick={() => setSearchAllDecos(true)}
+                >
+                  Search All
+                </button>
+                <button
+                  type="button"
+                  className={`segmented-button ${!searchAllDecos ? 'active' : ''}`}
+                  onClick={() => setSearchAllDecos(false)}
+                >
+                  Owned Only
+                </button>
+              </div>
+            </div>
+
+            {/* Configure Button if Owned Only is active */}
+            {!searchAllDecos && (
+              <button
+                type="button"
+                className="btn-primary"
+                style={{
+                  width: '100%',
+                  textTransform: 'none',
+                  fontSize: '0.85rem',
+                  padding: '8px 16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                }}
+                onClick={() => setIsDecoModalOpen(true)}
+              >
+                <Settings size={14} />
+                Configure Inventory
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* Search Results Limit Section */}
         <div>
           <div className="sidebar-section-title">
@@ -731,6 +830,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onSearch, isSearching }) => {
           {isSearching ? 'Solving Combinations...' : 'Solve Armor Sets'}
         </button>
       </div>
+      <DecoInventoryModal isOpen={isDecoModalOpen} onClose={() => setIsDecoModalOpen(false)} />
     </aside>
   );
 };

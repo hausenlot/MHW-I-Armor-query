@@ -44,6 +44,8 @@ self.onmessage = function (e) {
         weapon,
         charm,
         rankFilter: params.rankFilter || 'all',
+        includeTranscend: params.includeTranscend !== false,
+        customDecoLimits: params.customDecoLimits || null,
         maxResults: params.maxResults || 50,
       };
 

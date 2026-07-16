@@ -20,6 +20,7 @@ export async function loadGameData() {
     store.setDataIndex(index);
     store.setSkillsList(index.skillsList || []);
     store.setArmorSets(rawData.armorSets || []);
+    store.setDecorationsList(rawData.decorations || []);
     store.setDataLoaded(true);
   } catch (error) {
     console.error('Error loading game data:', error);

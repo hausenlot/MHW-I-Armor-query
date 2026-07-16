@@ -15,7 +15,7 @@
  * @param {Map<number, object[]>} decoBySkill - index: skillId → decorations[]
  * @returns {{ success: boolean, decoAssignments: object[] } | null}
  */
-export function tryFillWithDecos(remainingNeeds, armorSlots, weaponSlots, decoBySkill) {
+export function tryFillWithDecos(remainingNeeds, armorSlots, weaponSlots, decoBySkill, customDecoLimits = null) {
   // Nothing to fill
   if (remainingNeeds.size === 0) {
     return { success: true, decoAssignments: [] };
@@ -40,6 +40,7 @@ export function tryFillWithDecos(remainingNeeds, armorSlots, weaponSlots, decoBy
   const assignments = [];
   const usedArmorSlots = new Set();
   const usedWeaponSlots = new Set();
+  const usedDecoCounts = new Map();
 
   // Sort remaining skills by "fewest deco options" first (most constrained first)
   const sortedSkillIds = Array.from(needsMap.keys()).sort((a, b) => {
@@ -80,6 +81,12 @@ export function tryFillWithDecos(remainingNeeds, armorSlots, weaponSlots, decoBy
       });
 
       for (const deco of sortedDecos) {
+        if (customDecoLimits) {
+          const limit = customDecoLimits[deco.id] || 0;
+          const currentCount = usedDecoCounts.get(deco.id) || 0;
+          if (currentCount >= limit) continue; // Out of stock
+        }
+
         const level = deco.skills.find(s => s.skillId === skillId)?.level || 0;
         if (level <= 0) continue;
 
@@ -111,6 +118,10 @@ export function tryFillWithDecos(remainingNeeds, armorSlots, weaponSlots, decoBy
             usedArmorSlots.add(slotIdx);
           } else {
             usedWeaponSlots.add(slotIdx);
+          }
+
+          if (customDecoLimits) {
+            usedDecoCounts.set(deco.id, (usedDecoCounts.get(deco.id) || 0) + 1);
           }
 
           assignments.push({

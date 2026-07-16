@@ -92,6 +92,11 @@ interface AppState {
   skillsList: any[];
   armorSets: any[];
   maxResults: number;
+  includeTranscend: boolean;
+  rankFilter: 'all' | 'low' | 'high';
+  searchAllDecos: boolean;
+  customDecoLimits: Record<number, number>;
+  decorationsList: any[];
 
   // Actions
   setTheme: (theme: 'dark' | 'light') => void;
@@ -110,6 +115,12 @@ interface AppState {
   setSkillsList: (skillsList: any[]) => void;
   setArmorSets: (armorSets: any[]) => void;
   setMaxResults: (maxResults: number) => void;
+  setIncludeTranscend: (includeTranscend: boolean) => void;
+  setRankFilter: (rankFilter: 'all' | 'low' | 'high') => void;
+  setSearchAllDecos: (searchAllDecos: boolean) => void;
+  setCustomDecoLimits: (customDecoLimits: Record<number, number>) => void;
+  updateDecoLimit: (decoId: number, count: number) => void;
+  setDecorationsList: (decorationsList: any[]) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -230,6 +241,11 @@ export const useStore = create<AppState>((set) => ({
   armorSets: [],
   maxResults: 10,
   selectedWeaponSkills: [],
+  includeTranscend: true,
+  rankFilter: 'all',
+  searchAllDecos: true,
+  customDecoLimits: {},
+  decorationsList: [],
 
   setTheme: (theme) => set({ theme }),
   setWeaponSlots: (weaponSlots) => set({ weaponSlots }),
@@ -247,4 +263,15 @@ export const useStore = create<AppState>((set) => ({
   setSkillsList: (skillsList) => set({ skillsList }),
   setArmorSets: (armorSets) => set({ armorSets }),
   setMaxResults: (maxResults) => set({ maxResults }),
+  setIncludeTranscend: (includeTranscend) => set({ includeTranscend }),
+  setRankFilter: (rankFilter) => set({ rankFilter }),
+  setSearchAllDecos: (searchAllDecos) => set({ searchAllDecos }),
+  setCustomDecoLimits: (customDecoLimits) => set({ customDecoLimits }),
+  updateDecoLimit: (decoId, count) => set((state) => ({
+    customDecoLimits: {
+      ...state.customDecoLimits,
+      [decoId]: count
+    }
+  })),
+  setDecorationsList: (decorationsList) => set({ decorationsList }),
 }));

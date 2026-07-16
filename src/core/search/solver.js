@@ -25,7 +25,7 @@ import { tryFillWithDecos, canDecosReachTarget } from './decoFiller.js';
  */
 function solveSingle(params, index, onResult, onProgress) {
   const startTime = performance.now();
-  const { requiredSkills, weapon, charm, rankFilter, maxResults } = params;
+  const { requiredSkills, weapon, charm, rankFilter, includeTranscend, customDecoLimits, maxResults } = params;
 
   // ─── STEP 1: Compute initial skill needs ──────────────────────────
   const skillNeeds = new Map();
@@ -58,7 +58,7 @@ function solveSingle(params, index, onResult, onProgress) {
 
   // If all skills already satisfied by weapon + charm
   if (skillNeeds.size === 0) {
-    const result = buildResult([], weapon, charm, requiredSkills, index);
+    const result = buildResult([], weapon, charm, requiredSkills, index, [], [], includeTranscend);
     onResult(result);
     return { totalFound: 1, elapsed: performance.now() - startTime };
   }
@@ -86,7 +86,8 @@ function solveSingle(params, index, onResult, onProgress) {
       const hasRelevantSkill = piece.skills.some(s =>
         desiredSkillIds.has(s.skillId) && (s.setPiecesRequired == null)
       );
-      const hasDecoSlots = piece.slots.length > 0;
+      const pieceSlots = includeTranscend ? piece.slots : (piece.originalSlots || piece.slots);
+      const hasDecoSlots = pieceSlots.length > 0;
 
       // Also include pieces from sets that have bonuses for desired skills
       let hasRelevantSetBonus = false;
@@ -118,7 +119,7 @@ function solveSingle(params, index, onResult, onProgress) {
     });
 
     // Prune strictly worse pieces to dramatically optimize combination space
-    candidates[slot] = pruneSubsumedPieces(candidates[slot], desiredSkillIds, index);
+    candidates[slot] = pruneSubsumedPieces(candidates[slot], desiredSkillIds, index, includeTranscend);
   }
 
   // ─── STEP 6: Precomputations for pruning ───────────────────────────
@@ -166,7 +167,10 @@ function solveSingle(params, index, onResult, onProgress) {
   // Precompute decoration properties for each skillId
   const bestDecoForSkill = new Map();
   for (const skillId of desiredSkillIds) {
-    const decos = index.decoBySkill.get(skillId) || [];
+    let decos = index.decoBySkill.get(skillId) || [];
+    if (customDecoLimits) {
+      decos = decos.filter(d => (customDecoLimits[d.id] || 0) > 0);
+    }
     let bestDecoLevel = 0;
     let bestDecoSlot = 99;
     for (const d of decos) {
@@ -191,7 +195,8 @@ function solveSingle(params, index, onResult, onProgress) {
         const futureSlot = SLOT_ORDER[i];
         let maxInSlot = 0;
         for (const fp of candidates[futureSlot]) {
-          const count = fp.slots.filter(s => s >= level).length;
+          const fpSlots = includeTranscend ? fp.slots : (fp.originalSlots || fp.slots);
+          const count = fpSlots.filter(s => s >= level).length;
           if (count > maxInSlot) maxInSlot = count;
         }
         maxCount += maxInSlot;
@@ -323,14 +328,15 @@ function solveSingle(params, index, onResult, onProgress) {
         remaining,
         currentArmorSlots,
         weaponSlots,
-        index.decoBySkill
+        index.decoBySkill,
+        customDecoLimits
       );
 
       if (result && result.success) {
         totalFound++;
         const fullResult = buildResult(
           chosenPieces, weapon, charm, requiredSkills, index,
-          result.decoAssignments, bonusSkills
+          result.decoAssignments, bonusSkills, includeTranscend
         );
         onResult(fullResult);
       }
@@ -344,6 +350,8 @@ function solveSingle(params, index, onResult, onProgress) {
     for (const piece of pieces) {
       if (totalFound >= maxResults) return;
 
+      const pieceSlots = includeTranscend ? piece.slots : (piece.originalSlots || piece.slots);
+
       // ─── PUSH / MUTATE ──────────────────────────────────────────
       // Add piece's skills
       for (const s of piece.skills) {
@@ -352,7 +360,7 @@ function solveSingle(params, index, onResult, onProgress) {
       }
 
       // Add slots
-      for (const s of piece.slots) {
+      for (const s of pieceSlots) {
         currentArmorSlots.push(s);
         if (s >= 3) { currentSlots3++; currentSlots2++; currentSlots1++; }
         else if (s >= 2) { currentSlots2++; currentSlots1++; }
@@ -411,7 +419,10 @@ function solveSingle(params, index, onResult, onProgress) {
 
         const remainingPointsToFillWithDecos = needed - futureArmorPoints - futureSetBonusPoints;
         if (remainingPointsToFillWithDecos > 0) {
-          const decos = index.decoBySkill.get(skillId) || [];
+          let decos = index.decoBySkill.get(skillId) || [];
+          if (customDecoLimits) {
+            decos = decos.filter(d => (customDecoLimits[d.id] || 0) > 0);
+          }
           if (decos.length === 0) {
             isPossible = false;
             break;
@@ -477,7 +488,7 @@ function solveSingle(params, index, onResult, onProgress) {
       for (const skillId of piece.contributesToSetSkills || []) {
         currentSetSkillCounts[skillId]--;
       }
-      for (const s of piece.slots) {
+      for (const s of pieceSlots) {
         currentArmorSlots.pop();
         if (s >= 3) { currentSlots3--; currentSlots2--; currentSlots1--; }
         else if (s >= 2) { currentSlots2--; currentSlots1--; }
@@ -561,15 +572,16 @@ function computeSetBonuses(pieces, weapon, index) {
 /**
  * Build a displayable result object.
  */
-function buildResult(pieces, weapon, charm, requiredSkills, index, decoAssignments = [], bonusSkills = []) {
+function buildResult(pieces, weapon, charm, requiredSkills, index, decoAssignments = [], bonusSkills = [], includeTranscend = true) {
   // Compute total defense
   let totalDefenseBase = 0;
   let totalDefenseMax = 0;
   const totalResistances = { fire: 0, water: 0, ice: 0, thunder: 0, dragon: 0 };
 
   for (const piece of pieces) {
-    totalDefenseBase += piece.defense.base;
-    totalDefenseMax += piece.defense.max;
+    const defense = includeTranscend ? piece.defense : (piece.originalDefense || piece.defense);
+    totalDefenseBase += defense.base;
+    totalDefenseMax += defense.max;
     for (const [elem, val] of Object.entries(piece.resistances)) {
       totalResistances[elem] += val;
     }
@@ -628,7 +640,7 @@ function buildResult(pieces, weapon, charm, requiredSkills, index, decoAssignmen
   });
 
   // Count spare deco slots
-  const allArmorSlots = pieces.flatMap(p => p.slots);
+  const allArmorSlots = pieces.flatMap(p => includeTranscend ? p.slots : (p.originalSlots || p.slots));
   const usedSlotCount = decoAssignments.filter(d => d.slotSource === 'armor').length;
   const spareArmorSlots = allArmorSlots.length - usedSlotCount;
   const usedWeaponSlotCount = decoAssignments.filter(d => d.slotSource === 'weapon').length;
@@ -640,14 +652,14 @@ function buildResult(pieces, weapon, charm, requiredSkills, index, decoAssignmen
       name: p.name,
       kind: p.kind,
       rarity: p.rarity,
-      defense: p.defense,
+      defense: includeTranscend ? p.defense : (p.originalDefense || p.defense),
       resistances: p.resistances,
       skills: p.skills.filter(s => s.setPiecesRequired == null).map(s => ({
         skillId: s.skillId,
         name: index.skillById.get(s.skillId)?.name || `Skill #${s.skillId}`,
         level: s.level,
       })),
-      slots: p.slots,
+      slots: includeTranscend ? p.slots : (p.originalSlots || p.slots),
     })),
     weapon: weapon ? {
       id: weapon.id,
@@ -682,7 +694,7 @@ function buildResult(pieces, weapon, charm, requiredSkills, index, decoAssignmen
 /**
  * Filter candidates list by removing strictly worse pieces.
  */
-function pruneSubsumedPieces(pieces, desiredSkillIds, index) {
+function pruneSubsumedPieces(pieces, desiredSkillIds, index, includeTranscend) {
   const keepers = [];
 
   for (const piece of pieces) {
@@ -692,13 +704,13 @@ function pruneSubsumedPieces(pieces, desiredSkillIds, index) {
       const other = keepers[i];
 
       // Check if 'other' subsumes 'piece'
-      if (comparePieces(other, piece, desiredSkillIds, index)) {
+      if (comparePieces(other, piece, desiredSkillIds, index, includeTranscend)) {
         keep = false;
         break;
       }
 
       // Check if 'piece' subsumes 'other'
-      if (comparePieces(piece, other, desiredSkillIds, index)) {
+      if (comparePieces(piece, other, desiredSkillIds, index, includeTranscend)) {
         keepers.splice(i, 1);
         i--;
       }
@@ -715,7 +727,7 @@ function pruneSubsumedPieces(pieces, desiredSkillIds, index) {
 /**
  * Compare piece a and b. Returns true if a is better than or equal to b in every way.
  */
-function comparePieces(a, b, desiredSkillIds, index) {
+function comparePieces(a, b, desiredSkillIds, index, includeTranscend) {
   // 1. Compare relevant skills
   let aSkillsBetterOrEqual = true;
   let bSkillsBetterOrEqual = true;
@@ -727,8 +739,10 @@ function comparePieces(a, b, desiredSkillIds, index) {
   }
 
   // 2. Compare slots
-  const aSlots = [...a.slots].sort((x, y) => y - x);
-  const bSlots = [...b.slots].sort((x, y) => y - x);
+  const aSlotsRaw = includeTranscend ? a.slots : (a.originalSlots || a.slots);
+  const bSlotsRaw = includeTranscend ? b.slots : (b.originalSlots || b.slots);
+  const aSlots = [...aSlotsRaw].sort((x, y) => y - x);
+  const bSlots = [...bSlotsRaw].sort((x, y) => y - x);
 
   let aSlotsBetterOrEqual = true;
   if (aSlots.length < bSlots.length) {
@@ -782,7 +796,9 @@ function comparePieces(a, b, desiredSkillIds, index) {
 
     if (skillsEqual && slotsEqual && setEqual) {
       // functionally identical. Keep the one with better max defense.
-      return a.defense.max >= b.defense.max;
+      const aDefense = includeTranscend ? a.defense : (a.originalDefense || a.defense);
+      const bDefense = includeTranscend ? b.defense : (b.originalDefense || b.defense);
+      return aDefense.max >= bDefense.max;
     }
 
     return true; // a is strictly better than b
@@ -820,7 +836,7 @@ function sortResults(results) {
  * Run the armor set search, automatically iterating over charms if in search charms mode.
  */
 export function solve(params, index, onResult, onProgress) {
-  const { charm } = params;
+  const { charm, rankFilter } = params;
 
   // Decide charm search mode:
   // If charm is explicitly a specific charm object or null (No Charm), run once.
@@ -838,6 +854,11 @@ export function solve(params, index, onResult, onProgress) {
   const candidateCharms = [null]; // Always include no-charm
   const bestOptionPerCharm = new Map();
   for (const option of index.charmOptions || []) {
+    if (rankFilter && rankFilter !== 'all') {
+      const isLowRank = option.rarity <= 4;
+      if (rankFilter === 'low' && !isLowRank) continue;
+      if (rankFilter === 'high' && isLowRank) continue;
+    }
     const isRelevant = option.skills.some(s => desiredSkillIds.has(s.skillId));
     if (isRelevant) {
       const existing = bestOptionPerCharm.get(option.charmId);

@@ -125,6 +125,8 @@ function buildArmor(armorSets) {
 
   // Apply Armor Transcendence at build time
   for (const piece of lean) {
+    piece.originalDefense = { ...piece.defense };
+    piece.originalSlots = [...piece.slots];
     transcendArmor(piece);
     piece.isTranscended = true;
     piece.contributesToSetSkills = computeContributesToSetSkills(piece, armorSets);

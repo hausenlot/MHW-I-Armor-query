@@ -36,7 +36,11 @@ export function solveArmorSets() {
     selectedWeaponSkills,
     dataIndex,
     isLoading,
-    maxResults
+    maxResults,
+    includeTranscend,
+    rankFilter,
+    searchAllDecos,
+    customDecoLimits
   } = store;
 
   if (isLoading || !dataIndex || !searchWorker) return;
@@ -109,7 +113,9 @@ export function solveArmorSets() {
     requiredSkills,
     weapon,
     charm: 'search', // default to search charm mode
-    rankFilter: 'high',
+    rankFilter: rankFilter || 'all',
+    includeTranscend: includeTranscend !== false,
+    customDecoLimits: searchAllDecos ? null : customDecoLimits,
     maxResults: maxResults || 10,
   };
 
